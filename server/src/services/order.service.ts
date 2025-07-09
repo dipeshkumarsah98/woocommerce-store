@@ -1,0 +1,109 @@
+import Order from "../models/order.model";
+import { IOrder, IOrderQuery } from "../types/order.type";
+import { IProduct } from "../types/product.type";
+import axiosInstance from "../utils/axiosInstance.utils";
+import httpLogger from "./logger.service";
+import productService from "./product.service";
+
+const getOrders = async (filterQuery: IOrderQuery) => {
+  const { search, status, sortBy, sortOrder } = filterQuery;
+
+  const query: any = {};
+
+  if (status) query.status = status;
+
+  if (search) {
+    query.$text = { $search: search };
+  }
+
+  const sortField =
+    sortBy === "total" || sortBy === "date_created" ? sortBy : "date_created";
+  const sortDirection = sortOrder === "asc" ? 1 : -1;
+  const sort: { [key: string]: 1 | -1 } = { [sortField]: sortDirection };
+
+  const orders = await Order.find(query)
+    .populate({
+      path: "line_items",
+      select: "name",
+    })
+    .sort(sort)
+    .lean();
+  return orders;
+};
+
+const createOrder = async (order: IOrder) => {
+  const newOrder = new Order(order);
+  await newOrder.save();
+  return newOrder;
+};
+
+const getOrderById = async (id: string): Promise<IOrder | null> => {
+  const order = await Order.findById(id).populate("line_items.product").lean();
+  return order;
+};
+
+const getOrderOrderKey = async (orderKey: string): Promise<IOrder | null> => {
+  const order = await Order.findOne({ order_key: orderKey }).lean();
+  return order;
+};
+
+const getOrderProducts = async (
+  orderKey: string
+): Promise<IProduct[] | null> => {
+  const order = await getOrderOrderKey(orderKey);
+  if (!order) {
+    return null;
+  }
+  const products = await productService.getProductsByIds(order.line_items);
+  return products;
+};
+
+const createManyOrders = async (orders: IOrder[]) => {
+  const newOrders = await Order.insertMany(orders);
+  return newOrders;
+};
+
+const syncOrders = async () => {
+  try {
+    const { data } = await axiosInstance.get("wp-json/wc/v3/orders");
+    return data;
+  } catch (error: any) {
+    httpLogger.error(`Error syncing orders`, {
+      error: error.message,
+    });
+
+    return [];
+  }
+};
+
+const syncOrdersWithDateFilter = async (afterDate: string) => {
+  try {
+    const { data } = await axiosInstance.get("wp-json/wc/v3/orders", {
+      params: {
+        after: afterDate,
+        per_page: 100,
+        orderby: "date",
+        order: "desc",
+      },
+    });
+    return data;
+  } catch (error: any) {
+    httpLogger.error(`Error syncing orders with date filter`, {
+      error: error.message,
+      afterDate,
+    });
+
+    return [];
+  }
+};
+
+export default {
+  createOrder,
+  getOrderById,
+  createManyOrders,
+  getOrderProducts,
+  getOrders,
+  syncOrders,
+  getOrderOrderKey,
+  syncOrdersWithDateFilter,
+};

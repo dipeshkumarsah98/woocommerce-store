@@ -21,9 +21,14 @@ const getProducts = async (params: GetProductsParams = {}) => {
   return response.data;
 };
 
-const getProductById = async (id: string) => {
-  const response = await axiosInstance.get(`/api/products/${id}`);
+const getProductBySku = async (sku: string) => {
+  const response = await axiosInstance.get(`/api/products/${sku}`);
   return response.data;
 };
 
-export { getProducts, getProductById };
+const getProductOrders = async (sku: string) => {
+  const response = await axiosInstance.get(`/api/products/${sku}/orders`);
+  return response.data;
+};
+
+export { getProducts, getProductBySku, getProductOrders };

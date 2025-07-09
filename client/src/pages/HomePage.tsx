@@ -38,8 +38,6 @@ const HomePage = () => {
   const completedOrders = orders?.filter((order: any) => order.status === 'completed').length || 0;
   const pendingOrders = orders?.filter((order: any) => order.status === 'pending').length || 0;
 
- 
-
   return (
     <div className="container mx-auto py-8 px-4">
       <div className="mb-8">

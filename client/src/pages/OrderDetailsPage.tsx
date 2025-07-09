@@ -7,8 +7,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { ArrowLeft, User, Phone, Mail, CreditCard, Package } from "lucide-react";
 import { format } from "date-fns";
 import ProductCard from "@/components/ProductCard";
-import ProductCardSkeleton from "@/components/ProductCardSkeleton";
-import OrderCardSkeleton from "@/components/OrderCardSkeleton";
+import ProductCardSkeleton from "@/components/skeletons/ProductCardSkeleton";
+import OrderCardSkeleton from "@/components/skeletons/OrderCardSkeleton";
 import AddressCardSkeleton from "@/components/AddressCardSkeleton";
 
 /* Product response
@@ -88,7 +88,7 @@ const OrderDetailsPage = () => {
     <div className="container mx-auto py-8 px-4">
       <div className="mb-6">
         <Link to="/orders">
-          <Button variant="ghost" className="mb-4">
+          <Button variant="outline" className="mb-4 flex items-center gap-2">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Orders
           </Button>

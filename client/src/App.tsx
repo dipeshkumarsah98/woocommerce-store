@@ -17,8 +17,8 @@ function App() {
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/orders" element={<OrdersPage />} />
-          <Route path="/orders/:order_key" element={<OrderDetailsPage />} />
-        <Route path="/product/:id" element={<ProductDetailsPage />} />
+        <Route path="/orders/:order_key" element={<OrderDetailsPage />} />
+        <Route path="/products/:sku" element={<ProductDetailsPage />} />
         <Route path="/products" element={<ProductsPage />} />
         </Routes>
       </div>

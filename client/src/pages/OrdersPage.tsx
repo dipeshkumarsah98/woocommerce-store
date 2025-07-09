@@ -17,17 +17,25 @@ import { useDebounce } from "@/lib/utils";
 import OrdersSearchBar from "@/components/OrdersSearchBar";
 import useFetchOrders from "@/hooks/useFetchOrders";
 import { getStatusColor } from "@/lib/utils";
+import OrdersPageSkeleton from "@/components/skeletons/OrderPageSkeleton";
+import { 
+  Eye,
+} from "lucide-react";
 
+import OrderDetailsModal from "@/components/OrderDetailsModel";
 
 const OrdersPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState(searchParams.get("search") || "");
   const [statusFilter, setStatusFilter] = useState(searchParams.get("status") || "all");
+  const [lineItemFilter] = useState(searchParams.get("lineItem") || "");
   const [sortBy, setSortBy] = useState(searchParams.get("sort") || "");
+  const [selectedOrder, setSelectedOrder] = useState<any>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
-  const { data: orders, isLoading, error } = useFetchOrders(debouncedSearchTerm, statusFilter, sortBy);
+  const { data: orders, isLoading, error } = useFetchOrders(debouncedSearchTerm, statusFilter, sortBy, lineItemFilter);
 
   useEffect(() => {
     setSearchParams((prev) => {
@@ -51,11 +59,25 @@ const OrdersPage = () => {
     });
   }, [debouncedSearchTerm, statusFilter, sortBy, setSearchParams]);
 
+  const handleViewOrder = (order: any) => {
+    setSelectedOrder(order);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedOrder(null);
+  };
+
   if (error) return (
     <div className="flex items-center justify-center min-h-[400px]">
       <div className="text-destructive">Error: {error.message}</div>
     </div>
   );
+
+  if (isLoading) {
+    return <OrdersPageSkeleton />;
+  }
 
   return (
     <div className="container mx-auto py-8 px-4">
@@ -66,7 +88,7 @@ const OrdersPage = () => {
         </p>
       </div>
 
-      {!isLoading && orders && (
+      {orders && (
         <OrdersSearchBar
           searchTerm={searchTerm}
           onSearchChange={setSearchTerm}
@@ -77,7 +99,7 @@ const OrdersPage = () => {
         />
       )}
 
-      {!isLoading && orders && (
+      {orders && (
         <div className="mb-6">
           <p className="text-muted-foreground">
             {orders.length} orders
@@ -88,11 +110,7 @@ const OrdersPage = () => {
         </div>
       )}
 
-      {isLoading ? (
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="text-lg">Loading orders...</div>
-        </div>
-      ) : orders && orders.length > 0 ? (
+      {orders && orders.length > 0 ? (
         <div className="bg-card rounded-lg shadow border">
           <Table>
             <TableHeader>
@@ -102,7 +120,7 @@ const OrdersPage = () => {
                 <TableHead>Date</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Total</TableHead>
-                <TableHead className="w-[100px]">Actions</TableHead>
+                <TableHead className="w-[150px]">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -133,16 +151,33 @@ const OrdersPage = () => {
                     Rs. {order.total}
                   </TableCell>
                   <TableCell>
-                    <Link to={`/orders/${order.order_key}`}>
-                    <Button variant="link" className="text-primary hover:text-primary/80 text-sm font-medium hover:underline hover:text-blue-500">View Details</Button>
-                    </Link>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleViewOrder(order)}
+                        className="flex items-center gap-1"
+                      >
+                        <Eye className="h-4 w-4" />
+                        View
+                      </Button>
+                      <Link to={`/orders/${order.order_key}`}>
+                        <Button 
+                          variant="link" 
+                          size="sm"
+                          className="text-primary hover:text-primary/80 font-medium hover:underline"
+                        >
+                          Details
+                        </Button>
+                      </Link>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
         </div>
-      ) : (
+      ) : orders ? (
         <div className="text-center py-12">
           <div className="text-muted-foreground text-lg">
             {debouncedSearchTerm || (statusFilter && statusFilter !== "all") ? "No orders match your filters" : "No orders found"}
@@ -153,6 +188,15 @@ const OrdersPage = () => {
               : "Orders will appear here once they are created."}
           </p>
         </div>
+      ) : null}
+
+      {/* Order Details Modal */}
+      {selectedOrder && (
+        <OrderDetailsModal
+          order={selectedOrder}
+          isOpen={isModalOpen}
+          onClose={handleCloseModal}
+        />
       )}
     </div>
   );

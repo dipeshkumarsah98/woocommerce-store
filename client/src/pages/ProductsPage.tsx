@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router";
 import ProductCard from "@/components/ProductCard";
-import ProductCardSkeleton from "@/components/ProductCardSkeleton";
+import ProductCardSkeleton from "@/components/skeletons/ProductCardSkeleton";
 import SearchBar from "@/components/SearchBar";
 import { useDebounce } from "@/lib/utils";
 import useFetchProducts from "@/hooks/useFetchProducts";
@@ -72,6 +72,7 @@ const ProductsPage = () => {
               key={product._id} 
               product={product}
               showQuantity={false}
+              showOrders={true}
             />
           ))}
         </div>

@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { getOrders } from "@/services/orders";
 import { useMemo } from "react";
 
-const useFetchOrders = (search: string, status: string, sortBy?: string) => {
+const useFetchOrders = (search: string, status: string, sortBy?: string, lineItemFilter?: string) => {
   const [sortByValue, sortOrderValue] = useMemo(() => {
     if (!sortBy) return [];
     const [sortByValue, sortOrderValue] = sortBy.split('_');
@@ -10,12 +10,13 @@ const useFetchOrders = (search: string, status: string, sortBy?: string) => {
   }, [sortBy]);
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ["orders", search, status, sortByValue, sortOrderValue],
+    queryKey: ["orders", search, status, sortByValue, sortOrderValue, lineItemFilter],
     queryFn: () => getOrders({ 
       search, 
       status, 
       sortBy: sortByValue, 
-      sortOrder: sortOrderValue as "asc" | "desc" 
+      sortOrder: sortOrderValue as "asc" | "desc",
+      lineItem: lineItemFilter
     }),
   });
 

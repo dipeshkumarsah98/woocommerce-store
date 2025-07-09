@@ -5,6 +5,7 @@ interface GetOrdersParams {
   status?: string;
   sortBy?: string;
   sortOrder?: "asc" | "desc";
+  lineItem?: string;
 }
 
 const getOrders = async (params: GetOrdersParams = {}) => {
@@ -15,6 +16,7 @@ const getOrders = async (params: GetOrdersParams = {}) => {
     searchParams.append("sortBy", params.sortBy);
     searchParams.append("sortOrder", params.sortOrder);
   }
+  if (params.lineItem) searchParams.append("lineItem", params.lineItem);
   
   const queryString = searchParams.toString();
   const url = queryString ? `/api/orders?${queryString}` : "/api/orders";

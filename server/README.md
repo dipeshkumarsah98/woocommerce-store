@@ -55,7 +55,7 @@ Before running this application, ensure you have:
 
 ### 1. Clone the Repository
 ```bash
-git clone <repository-url>
+git clone https://github.com/dipeshkumarsah98/woocommerce-store.git
 cd server
 ```
 

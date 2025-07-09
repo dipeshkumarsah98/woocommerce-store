@@ -21,4 +21,5 @@ export interface IOrderQuery {
     status?: 'pending' | 'processing' | 'on-hold' | 'completed' | 'cancelled' | 'failed';
     sortBy?: string;
     sortOrder?: "asc" | "desc";
+    lineItem?: string;
 }

@@ -25,6 +25,16 @@ productSchema.index({
     description: "text",
 });
 
+productSchema.virtual("orders", {
+    ref: "Order",
+    localField: "_id",
+    foreignField: "line_items",
+    justOne: false,
+});
+
+productSchema.set("toJSON", { virtuals: true });
+productSchema.set("toObject", { virtuals: true });
+
 const Product = model<IProduct>("Product", productSchema);
 
 export default Product;

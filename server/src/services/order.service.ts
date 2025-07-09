@@ -1,16 +1,19 @@
 import Order from "../models/order.model";
 import { IOrder, IOrderQuery } from "../types/order.type";
+import { Types } from "mongoose";
 import { IProduct } from "../types/product.type";
 import axiosInstance from "../utils/axiosInstance.utils";
 import httpLogger from "./logger.service";
 import productService from "./product.service";
 
 const getOrders = async (filterQuery: IOrderQuery) => {
-  const { search, status, sortBy, sortOrder } = filterQuery;
+  const { search, status, sortBy, sortOrder, lineItem } = filterQuery;
 
   const query: any = {};
 
   if (status) query.status = status;
+
+  if (lineItem && Types.ObjectId.isValid(lineItem)) query.line_items = { $in: [new Types.ObjectId(lineItem)] };
 
   if (search) {
     query.$text = { $search: search };
@@ -35,6 +38,17 @@ const createOrder = async (order: IOrder) => {
   const newOrder = new Order(order);
   await newOrder.save();
   return newOrder;
+};
+
+const getProductOrders = async (productId: Types.ObjectId) => {
+  const orders = await Order.find({
+    line_items: { $in: [productId] },
+  }).populate({
+    path: "line_items",
+    select: "name",
+  });
+
+  return orders;
 };
 
 const getOrderById = async (id: string): Promise<IOrder | null> => {
@@ -97,6 +111,7 @@ const syncOrdersWithDateFilter = async (afterDate: string) => {
   }
 };
 
+
 export default {
   createOrder,
   getOrderById,
@@ -106,4 +121,5 @@ export default {
   syncOrders,
   getOrderOrderKey,
   syncOrdersWithDateFilter,
+  getProductOrders,
 };

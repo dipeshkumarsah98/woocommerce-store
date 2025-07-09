@@ -1,11 +1,4 @@
-# React + Vite + TypeScript Template (react-vite-ui)
-
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/Dan5py/react-vite-ui/blob/main/LICENSE)
-
-A React + Vite template powered by shadcn/ui.
-
-> [!NOTE]
-> This template uses Tailwind v3, if you want to use Tailwind v4, check the [tw4 branch](https://github.com/dan5py/react-vite-shadcn-ui/tree/tw4).
+# Woocommerce store UI
 
 ## 🎉 Features
 
@@ -83,7 +76,3 @@ react-vite-ui/
   ├── tsconfig.json      # TypeScript configuration
   └── vite.config.ts     # Vite configuration
 ```
-
-## 📄 License
-
-This project is licensed under the MIT License. See the [LICENSE](https://choosealicense.com/licenses/mit/) file for details.

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useSearchParams } from "react-router";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,133 @@ import {
 } from "lucide-react";
 
 import OrderDetailsModal from "@/components/OrderDetailsModel";
+
+const OrdersTable = React.memo(({ 
+  orders, 
+  onViewOrder 
+}: { 
+  orders: any[]; 
+  onViewOrder: (order: any) => void;
+}) => {
+  return (
+    <div className="bg-card rounded-lg shadow border">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="w-[100px]">Order #</TableHead>
+            <TableHead>Customer</TableHead>
+            <TableHead>Date</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead className="text-right">Total</TableHead>
+            <TableHead className="w-[150px]">Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {orders.map((order: any) => (
+            <TableRow key={order._id} className="hover:bg-muted/50">
+              <TableCell className="font-medium">
+                #{order.number}
+              </TableCell>
+              <TableCell>
+                <div>
+                  <div className="font-medium">
+                    {order.billing.first_name} {order.billing.last_name}
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    {order.billing.email}
+                  </div>
+                </div>
+              </TableCell>
+              <TableCell>
+                {format(new Date(order.date_created), "MMM dd, yyyy")}
+              </TableCell>
+              <TableCell>
+                <Badge className={ cn(getStatusColor(order.status), "hover:cursor-pointer")}>
+                  {order.status}
+                </Badge>
+              </TableCell>
+              <TableCell className="text-right font-medium">
+                Rs. {order.total}
+              </TableCell>
+              <TableCell>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onViewOrder(order)}
+                    className="flex items-center gap-1"
+                  >
+                    <Eye className="h-4 w-4" />
+                    View
+                  </Button>
+                  <Link to={`/orders/${order.order_key}`}>
+                    <Button 
+                      variant="link" 
+                      size="sm"
+                      className="text-primary hover:text-primary/80 font-medium hover:underline"
+                    >
+                      Details
+                    </Button>
+                  </Link>
+                </div>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
+});
+
+OrdersTable.displayName = "OrdersTable";
+
+const ResultsSummary = React.memo(({ 
+  ordersCount, 
+  searchTerm, 
+  statusFilter, 
+  sortBy 
+}: {
+  ordersCount: number;
+  searchTerm: string;
+  statusFilter: string;
+  sortBy: string;
+}) => {
+  return (
+    <div className="mb-6">
+      <p className="text-muted-foreground">
+        {ordersCount} orders
+        {searchTerm && ` matching "${searchTerm}"`}
+        {statusFilter && statusFilter !== "all" && ` with status "${statusFilter}"`}
+        {sortBy && ` sorted by ${sortBy.replace('_', ' ')}`}
+      </p>
+    </div>
+  );
+});
+
+ResultsSummary.displayName = "ResultsSummary";
+
+const EmptyState = React.memo(({ 
+  searchTerm, 
+  statusFilter 
+}: {
+  searchTerm: string;
+  statusFilter: string;
+}) => {
+  return (
+    <div className="text-center py-12">
+      <div className="text-muted-foreground text-lg">
+        {searchTerm || (statusFilter && statusFilter !== "all") ? "No orders match your filters" : "No orders found"}
+      </div>
+      <p className="text-muted-foreground/70 mt-2">
+        {searchTerm || (statusFilter && statusFilter !== "all")
+          ? "Try adjusting your search terms or filters." 
+          : "Orders will appear here once they are created."}
+      </p>
+    </div>
+  );
+});
+
+EmptyState.displayName = "EmptyState";
 
 const OrdersPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -59,15 +186,36 @@ const OrdersPage = () => {
     });
   }, [debouncedSearchTerm, statusFilter, sortBy, setSearchParams]);
 
-  const handleViewOrder = (order: any) => {
+  const handleViewOrder = useCallback((order: any) => {
     setSelectedOrder(order);
     setIsModalOpen(true);
-  };
+  }, []);
 
-  const handleCloseModal = () => {
+  const handleCloseModal = useCallback(() => {
     setIsModalOpen(false);
     setSelectedOrder(null);
-  };
+  }, []);
+
+  const searchBarProps = useMemo(() => ({
+    searchTerm,
+    onSearchChange: setSearchTerm,
+    statusFilter,
+    onStatusFilterChange: setStatusFilter,
+    sortBy,
+    onSortChange: setSortBy,
+  }), [searchTerm, statusFilter, sortBy]);
+
+  const resultsSummaryProps = useMemo(() => ({
+    ordersCount: orders?.length || 0,
+    searchTerm: debouncedSearchTerm,
+    statusFilter,
+    sortBy,
+  }), [orders?.length, debouncedSearchTerm, statusFilter, sortBy]);
+
+  const emptyStateProps = useMemo(() => ({
+    searchTerm: debouncedSearchTerm,
+    statusFilter,
+  }), [debouncedSearchTerm, statusFilter]);
 
   if (error) return (
     <div className="flex items-center justify-center min-h-[400px]">
@@ -89,108 +237,22 @@ const OrdersPage = () => {
       </div>
 
       {orders && (
-        <OrdersSearchBar
-          searchTerm={searchTerm}
-          onSearchChange={setSearchTerm}
-          statusFilter={statusFilter}
-          onStatusFilterChange={setStatusFilter}
-          sortBy={sortBy}
-          onSortChange={setSortBy}
-        />
+        <OrdersSearchBar {...searchBarProps} />
       )}
 
       {orders && (
-        <div className="mb-6">
-          <p className="text-muted-foreground">
-            {orders.length} orders
-            {debouncedSearchTerm && ` matching "${debouncedSearchTerm}"`}
-            {statusFilter && statusFilter !== "all" && ` with status "${statusFilter}"`}
-            {sortBy && ` sorted by ${sortBy.replace('_', ' ')}`}
-          </p>
-        </div>
+        <ResultsSummary {...resultsSummaryProps} />
       )}
 
       {orders && orders.length > 0 ? (
-        <div className="bg-card rounded-lg shadow border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[100px]">Order #</TableHead>
-                <TableHead>Customer</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Total</TableHead>
-                <TableHead className="w-[150px]">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {orders.map((order: any) => (
-                <TableRow key={order._id} className="hover:bg-muted/50">
-                  <TableCell className="font-medium">
-                    #{order.number}
-                  </TableCell>
-                  <TableCell>
-                    <div>
-                      <div className="font-medium">
-                        {order.billing.first_name} {order.billing.last_name}
-                      </div>
-                      <div className="text-sm text-muted-foreground">
-                        {order.billing.email}
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    {format(new Date(order.date_created), "MMM dd, yyyy")}
-                  </TableCell>
-                  <TableCell>
-                    <Badge className={ cn(getStatusColor(order.status), "hover:cursor-pointer")}>
-                      {order.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right font-medium">
-                    Rs. {order.total}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleViewOrder(order)}
-                        className="flex items-center gap-1"
-                      >
-                        <Eye className="h-4 w-4" />
-                        View
-                      </Button>
-                      <Link to={`/orders/${order.order_key}`}>
-                        <Button 
-                          variant="link" 
-                          size="sm"
-                          className="text-primary hover:text-primary/80 font-medium hover:underline"
-                        >
-                          Details
-                        </Button>
-                      </Link>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+        <OrdersTable 
+          orders={orders} 
+          onViewOrder={handleViewOrder}
+        />
       ) : orders ? (
-        <div className="text-center py-12">
-          <div className="text-muted-foreground text-lg">
-            {debouncedSearchTerm || (statusFilter && statusFilter !== "all") ? "No orders match your filters" : "No orders found"}
-          </div>
-          <p className="text-muted-foreground/70 mt-2">
-            {debouncedSearchTerm || (statusFilter && statusFilter !== "all")
-              ? "Try adjusting your search terms or filters." 
-              : "Orders will appear here once they are created."}
-          </p>
-        </div>
+        <EmptyState {...emptyStateProps} />
       ) : null}
 
-      {/* Order Details Modal */}
       {selectedOrder && (
         <OrderDetailsModal
           order={selectedOrder}

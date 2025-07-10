@@ -51,7 +51,6 @@ class QueueService {
   }
 
   private initializeQueues(): void {
-    // Initialize Orders queue
     this.createQueue(QUEUE_NAMES.ORDERS);
     this.createQueue(QUEUE_NAMES.PRODUCTS);
     this.createFlow(QUEUE_NAMES.ORDERS);
@@ -160,7 +159,6 @@ class QueueService {
     }
   }
 
-  // Orders queue specific methods
   public async addOrderSyncJob(
     data: QueueJobData,
     options?: QueueJobOptions

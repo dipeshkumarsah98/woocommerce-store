@@ -1,7 +1,5 @@
 import Order from "../models/order.model";
 import Product from "../models/product.model";
-import { IOrder } from "../types/order.type";
-import { IProduct } from "../types/product.type";
 import httpLogger from "./logger.service";
 import { Types } from "mongoose";
 
@@ -25,7 +23,6 @@ const cleanupOldOrders = async (): Promise<{ deletedOrders: number; deletedProdu
 
     httpLogger.info(`Found ${oldOrders.length} orders to delete`);
 
-    // Collect all product IDs from orders that will be deleted
     const productIdsToCheck = new Set<string>();
     oldOrders.forEach(order => {
       order.line_items.forEach(productId => {
@@ -35,19 +32,16 @@ const cleanupOldOrders = async (): Promise<{ deletedOrders: number; deletedProdu
       });
     });
 
-    // Delete old orders
     const deleteOrdersResult = await Order.deleteMany({
       date_created: { $lt: threeMonthsAgo }
     });
 
     httpLogger.info(`Deleted ${deleteOrdersResult.deletedCount} old orders`);
 
-    // Now check for orphaned products
     const orphanedProducts = await findOrphanedProducts(Array.from(productIdsToCheck));
     
     let deletedProductsCount = 0;
     if (orphanedProducts.length > 0) {
-      // Delete orphaned products
       const deleteProductsResult = await Product.deleteMany({
         _id: { $in: orphanedProducts.map(id => new Types.ObjectId(id)) }
       });
@@ -74,7 +68,6 @@ const cleanupOldOrders = async (): Promise<{ deletedOrders: number; deletedProdu
   }
 };
 
-// Find products that are no longer referenced by any orders
 const findOrphanedProducts = async (productIdsToCheck: string[]): Promise<string[]> => {
   try {
     if (productIdsToCheck.length === 0) {
@@ -85,7 +78,6 @@ const findOrphanedProducts = async (productIdsToCheck: string[]): Promise<string
 
     const orphanedProducts: string[] = [];
 
-    // Check each product to see if it's still referenced by any remaining orders
     for (const productId of productIdsToCheck) {
       const ordersWithProduct = await Order.countDocuments({
         line_items: new Types.ObjectId(productId)
@@ -107,7 +99,6 @@ const findOrphanedProducts = async (productIdsToCheck: string[]): Promise<string
   }
 };
 
-// Get cleanup statistics (for monitoring)
 const getCleanupStats = async () => {
   try {
     const threeMonthsAgo = new Date();
@@ -134,7 +125,6 @@ const getCleanupStats = async () => {
   }
 };
 
-// Preview what would be deleted (dry run)
 const previewCleanup = async () => {
   try {
     httpLogger.info("Running cleanup preview...");
@@ -158,7 +148,6 @@ const previewCleanup = async () => {
       };
     }
 
-    // Collect product IDs that would need to be checked
     const productIdsToCheck = new Set<string>();
     ordersToDelete.forEach(order => {
       order.line_items.forEach(productId => {

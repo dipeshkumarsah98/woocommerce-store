@@ -214,13 +214,15 @@ class WorkerService {
           },
           queueName: QUEUE_NAMES.PRODUCTS,
           opts: {
-            attempts: 3,
+            attempts: 2,
           },
         };
       }
     );
 
-    await queueService.addProcessOrderFlowJob(transformedOrder, childrens);
+    await queueService.addProcessOrderFlowJob(transformedOrder, childrens, {
+      attempts: 3,
+    });
 
     console.log("Process order flow job added to the queue");
     return;

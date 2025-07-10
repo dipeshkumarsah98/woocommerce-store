@@ -10,42 +10,8 @@ import ProductCard from "@/components/ProductCard";
 import ProductCardSkeleton from "@/components/skeletons/ProductCardSkeleton";
 import OrderCardSkeleton from "@/components/skeletons/OrderCardSkeleton";
 import AddressCardSkeleton from "@/components/AddressCardSkeleton";
+import ErrorState from "@/components/ErrorState";
 
-/* Product response
-  [{
-            "_id": "686e6ea7c62f165028cb4d3b",
-            "product_id": 34,
-            "description": "<p>Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Vestibulum tortor quam, feugiat vitae, ultricies eget, tempor sit amet, ante. Donec eu libero sit amet quam egestas semper. Aenean ultricies mi vitae est. Mauris placerat eleifend leo.</p>\n<p>Photography by @cottonbro.</p>\n",
-            "name": "Hat",
-            "meta_data": [
-                {
-                    "id": 222,
-                    "key": "_wpcom_is_markdown",
-                    "value": "1"
-                }
-            ],
-            "sku": "woo-fasion-hat",
-            "stock_status": "instock",
-            "categories": [
-                {
-                    "id": 20,
-                    "name": "Accessories",
-                    "slug": "accessories"
-                }
-            ],
-            "price": "12",
-            "images": [
-                {
-                    "id": 33,
-                    "src": "https://interview-test.matat.io/wp-content/uploads/2024/03/167113811-0be977aa-edfe-4a09-b36d-a62f02de4a29.jpeg",
-                    "name": "167113811-0be977aa-edfe-4a09-b36d-a62f02de4a29.jpeg",
-                    "alt": "",
-                    "_id": "686e6ea7c62f165028cb4d3c"
-                }
-            ],
-            "__v": 0
-        }]
-*/
 
 const getStatusColor = (status: string) => {
   switch (status.toLowerCase()) {
@@ -67,22 +33,39 @@ const getStatusColor = (status: string) => {
 const OrderDetailsPage = () => {
   const { order_key } = useParams();
 
-  const { data: order, isLoading: orderLoading, error: orderError } = useQuery({
+  const { data: order, isLoading: orderLoading, error: orderError, refetch: refetchOrder } = useQuery({
     queryKey: ["order", order_key],
     queryFn: () => getOrderByKey(order_key as string),
   });
 
-  const { data: products, isLoading: productsLoading, error: productsError } = useQuery({
+  const { data: products, isLoading: productsLoading, error: productsError, refetch: refetchProducts } = useQuery({
     queryKey: ["order-products", order_key],
     queryFn: () => getOrderProducts(order_key as string),
     enabled: !!order,
   });
 
-  if (orderError) return (
-    <div className="flex items-center justify-center min-h-[400px]">
-      <div className="text-destructive">Error: {orderError.message}</div>
-    </div>
-  );
+  if (orderError) {
+    return (
+      <div className="container mx-auto py-8 px-4">
+        <div className="mb-6">
+          <Link to="/orders">
+            <Button variant="outline" className="mb-4 flex items-center gap-2">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Orders
+            </Button>
+          </Link>
+        </div>
+        <ErrorState 
+          variant="server"
+          error={orderError}
+          title="Failed to load order"
+          description="We couldn't load the order details. Please try again."
+          onRetry={refetchOrder}
+          showHome={false}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto py-8 px-4">
@@ -114,9 +97,13 @@ const OrderDetailsPage = () => {
             </Badge>
           </div>
         ) : (
-          <div className="flex items-center justify-center min-h-[400px]">
-            <div className="text-muted-foreground">Order not found</div>
-          </div>
+          <ErrorState 
+            variant="notFound"
+            title="Order not found"
+            description="The order you're looking for doesn't exist or has been removed."
+            showRetry={false}
+            showHome={false}
+          />
         )}
       </div>
 
@@ -245,9 +232,15 @@ const OrderDetailsPage = () => {
               ))}
             </div>
           ) : productsError ? (
-            <div className="text-center py-8">
-              <div className="text-destructive">Error loading products: {productsError.message}</div>
-            </div>
+            <ErrorState 
+              variant="server"
+              error={productsError}
+              title="Failed to load products"
+              description="We couldn't load the order products. Please try again."
+              onRetry={refetchProducts}
+              showHome={false}
+              showBack={false}
+            />
           ) : products && products.length > 0 ? (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {products.map((product: any) => (

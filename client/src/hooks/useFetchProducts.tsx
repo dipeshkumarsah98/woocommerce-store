@@ -9,12 +9,12 @@ const useFetchProducts = (search: string, sortBy?: string) => {
     return [sortByValue, sortOrderValue];
   }, [sortBy]);
 
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["products", search, sortByValue, sortOrderValue],
     queryFn: () => getProducts({ search, sortBy: sortByValue, sortOrder: sortOrderValue as "asc" | "desc" }),
   });
 
-  return { data, isLoading, error };
+  return { data, isLoading, error, refetch };
 };
 
 export default useFetchProducts;

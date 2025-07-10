@@ -18,6 +18,7 @@ import OrdersSearchBar from "@/components/OrdersSearchBar";
 import useFetchOrders from "@/hooks/useFetchOrders";
 import { getStatusColor } from "@/lib/utils";
 import OrdersPageSkeleton from "@/components/skeletons/OrderPageSkeleton";
+import ErrorState from "@/components/ErrorState";
 import { 
   Eye,
 } from "lucide-react";
@@ -162,7 +163,7 @@ const OrdersPage = () => {
   
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
-  const { data: orders, isLoading, error } = useFetchOrders(debouncedSearchTerm, statusFilter, sortBy, lineItemFilter);
+  const { data: orders, isLoading, error, refetch } = useFetchOrders(debouncedSearchTerm, statusFilter, sortBy, lineItemFilter);
 
   useEffect(() => {
     setSearchParams((prev) => {
@@ -217,11 +218,27 @@ const OrdersPage = () => {
     statusFilter,
   }), [debouncedSearchTerm, statusFilter]);
 
-  if (error) return (
-    <div className="flex items-center justify-center min-h-[400px]">
-      <div className="text-destructive">Error: {error.message}</div>
-    </div>
-  );
+  // Handle error state
+  if (error) {
+    return (
+      <div className="container mx-auto py-8 px-4">
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold">Orders</h1>
+          <p className="text-muted-foreground mt-2">
+            Manage and view all your store orders
+          </p>
+        </div>
+        <ErrorState 
+          variant="server"
+          error={error}
+          title="Failed to load orders"
+          description="We couldn't load your orders. Please try again."
+          onRetry={refetch}
+          showHome={false}
+        />
+      </div>
+    );
+  }
 
   if (isLoading) {
     return <OrdersPageSkeleton />;

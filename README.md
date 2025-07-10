@@ -215,3 +215,36 @@ interface Product {
 - **Rate Limiting**: API rate limiting
 - **Authentication**: JWT token management
 - **Authorization**: Role-based access control
+
+## ⚠️ Known Issues or Limitations
+
+### Frontend Limitations
+- **No Error Boundaries**: Missing React Error Boundaries for global error handling
+- **Limited Testing**: No comprehensive test suite implemented
+- **No Authentication UI**: No login/logout functionality or user management
+- **No Offline Support**: No service worker or offline capabilities
+- **No Form Validation**: Missing client-side form validation for data entry
+- **No Loading States**: Some components lack proper loading states
+- **No Error Recovery**: Limited error recovery mechanisms for failed API calls
+
+### Backend Limitations
+- **No Authentication**: No JWT or session-based authentication system
+- **No Rate Limiting**: Missing API rate limiting middleware
+- **No Input Validation**: Limited request validation and sanitization
+- **No Caching**: No Redis caching implementation for API responses
+- **Limited Error Handling**: Basic error handling without detailed error codes
+- **No API Versioning**: No API versioning strategy implemented
+- **No Request Logging**: Missing request/response logging middleware
+- **No Health Checks**: No comprehensive health check endpoints
+- **Limited Testing**: Minimal test coverage with only basic E2E tests
+
+### Database Limitations
+- **No Backup Strategy**: No automated database backup system
+- **No Data Migration**: No database migration system
+
+### Queue System Limitations
+- **No Queue Monitoring**: Limited queue health monitoring
+- **No Job Prioritization**: Basic job priority system
+- **No Dead Letter Queue**: Missing failed job handling
+- **No Queue Scaling**: No horizontal scaling for queues
+- **Limited Error Recovery**: Basic retry logic without advanced recovery

@@ -9,16 +9,17 @@ import { getStatusColor } from "@/lib/utils";
 import { format } from "date-fns";
 import OrderCardSkeleton from "@/components/skeletons/OrderCardSkeleton";
 import ProductDetailsSkeleton from "@/components/skeletons/ProductDetailsSkeleton";
+import ErrorState from "@/components/ErrorState";
 
 const ProductDetailsPage = () => {
   const { sku } = useParams();
 
-  const { data: product, isLoading, error } = useQuery({
+  const { data: product, isLoading, error, refetch } = useQuery({
     queryKey: ["product", sku],
     queryFn: () => getProductBySku(sku || ""),
   });
 
-  const { data: orders, isLoading: ordersLoading, error: ordersError } = useQuery({
+  const { data: orders, isLoading: ordersLoading, error: ordersError, refetch: refetchOrders } = useQuery({
     queryKey: ["product-orders", sku],
     queryFn: () => getProductOrders(sku || ""),
     enabled: !!sku && !!product,
@@ -31,9 +32,22 @@ const ProductDetailsPage = () => {
   if (error) {
     return (
       <div className="container mx-auto py-8 px-4">
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="text-destructive">Error: {error.message}</div>
+        <div className="mb-6">
+          <Link to="/products">
+            <Button variant="outline" className="flex items-center gap-2">
+              <ArrowLeft className="h-4 w-4" />
+              Back to Products
+            </Button>
+          </Link>
         </div>
+        <ErrorState 
+          variant="server"
+          error={error}
+          title="Failed to load product"
+          description="We couldn't load the product details. Please try again."
+          onRetry={refetch}
+          showHome={false}
+        />
       </div>
     );
   }
@@ -41,9 +55,21 @@ const ProductDetailsPage = () => {
   if (!product) {
     return (
       <div className="container mx-auto py-8 px-4">
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="text-muted-foreground">Product not found</div>
+        <div className="mb-6">
+          <Link to="/products">
+            <Button variant="outline" className="flex items-center gap-2">
+              <ArrowLeft className="h-4 w-4" />
+              Back to Products
+            </Button>
+          </Link>
         </div>
+        <ErrorState 
+          variant="notFound"
+          title="Product not found"
+          description="The product you're looking for doesn't exist or has been removed."
+          showRetry={false}
+          showHome={false}
+        />
       </div>
     );
   }
@@ -175,12 +201,15 @@ const ProductDetailsPage = () => {
               ))}
             </div>
           ) : ordersError ? (
-            <div className="text-center py-8">
-              <div className="text-destructive mb-2">Error loading orders</div>
-              <p className="text-muted-foreground text-sm">
-                {ordersError.message}
-              </p>
-            </div>
+            <ErrorState 
+              variant="server"
+              error={ordersError}
+              title="Failed to load orders"
+              description="We couldn't load the related orders. Please try again."
+              onRetry={refetchOrders}
+              showHome={false}
+              showBack={false}
+            />
           ) : orders && orders.length > 0 ? (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {orders.map((order: any) => (

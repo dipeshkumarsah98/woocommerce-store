@@ -5,6 +5,7 @@ import ProductCardSkeleton from "@/components/skeletons/ProductCardSkeleton";
 import SearchBar from "@/components/SearchBar";
 import { useDebounce } from "@/lib/utils";
 import useFetchProducts from "@/hooks/useFetchProducts";
+import ErrorState from "@/components/ErrorState";
 
 const ProductsGrid = React.memo(({ 
   products, 
@@ -94,7 +95,7 @@ const ProductsPage = () => {
   
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
-  const { data: products, isLoading, error } = useFetchProducts(debouncedSearchTerm, sortBy);
+  const { data: products, isLoading, error, refetch } = useFetchProducts(debouncedSearchTerm, sortBy);
 
   useEffect(() => {
     setSearchParams((prev) => {
@@ -122,11 +123,27 @@ const ProductsPage = () => {
     searchTerm: debouncedSearchTerm,
   }), [debouncedSearchTerm]);
 
-  if (error) return (
-    <div className="flex items-center justify-center min-h-[400px]">
-      <div className="text-destructive">Error: {error.message}</div>
-    </div>
-  );
+  // Handle error state
+  if (error) {
+    return (
+      <div className="container mx-auto py-8 px-4">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold">Products</h1>
+          <p className="text-muted-foreground mt-2">
+            Browse and manage all your store products
+          </p>
+        </div>
+        <ErrorState 
+          variant="server"
+          error={error}
+          title="Failed to load products"
+          description="We couldn't load your products. Please try again."
+          onRetry={refetch}
+          showHome={false}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto py-8 px-4">

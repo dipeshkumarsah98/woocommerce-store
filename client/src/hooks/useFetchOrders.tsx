@@ -9,7 +9,7 @@ const useFetchOrders = (search: string, status: string, sortBy?: string, lineIte
     return [sortByValue, sortOrderValue];
   }, [sortBy]);
 
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["orders", search, status, sortByValue, sortOrderValue, lineItemFilter],
     queryFn: () => getOrders({ 
       search, 
@@ -20,7 +20,7 @@ const useFetchOrders = (search: string, status: string, sortBy?: string, lineIte
     }),
   });
 
-  return { data, isLoading, error };
+  return { data, isLoading, error, refetch };
 };
 
 export default useFetchOrders; 

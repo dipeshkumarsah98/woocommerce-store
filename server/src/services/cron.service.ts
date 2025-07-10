@@ -6,6 +6,7 @@ import cleanupService from "./cleanup.service";
 import { IOrder } from "../types/order.type";
 import ServerError from "../errors/serverError.error";
 import { StatusCodes } from "http-status-codes";
+import queueService from "./queue.service";
 
 // Daily sync job at 12:00 PM
 const syncOrdersDaily = cron.schedule(
@@ -14,17 +15,7 @@ const syncOrdersDaily = cron.schedule(
     httpLogger.info("Starting daily order sync job...");
 
     try {
-      const processedOrders = await startSyncProcess();
-      if (!processedOrders) {
-        throw new ServerError(
-          "WooCommerce Server Error",
-          StatusCodes.INTERNAL_SERVER_ERROR.toString()
-        );
-      }
-
-      httpLogger.info(
-        `Successfully processed ${processedOrders.length} orders`
-      );
+      await startSyncProcess();
     } catch (error: any) {
       httpLogger.error("Error in daily order sync job:", {
         error: error.message,
@@ -61,31 +52,25 @@ const cleanupWeekly = cron.schedule(
   }
 );
 
-const startSyncProcess = async () => {
-  const thirtyDaysAgo = new Date();
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+export const startSyncProcess = async () => {
 
-  const afterDate = thirtyDaysAgo.toISOString();
+  await queueService.addOrderSyncJob({}, {
+    attempts: 3
+  }); 
 
-  httpLogger.info(`Fetching orders from ${afterDate}`);
+  httpLogger.info("Added order sync job to the queue");
 
-  const wooCommerceOrders = await fetchOrdersFromWooCommerce(afterDate);
 
-  if (wooCommerceOrders.length === 0) {
-    httpLogger.info("No orders found in the last 30 days");
-    return;
-  }
+  // httpLogger.info(`Found ${wooCommerceOrders.length} orders from WooCommerce`);
 
-  httpLogger.info(`Found ${wooCommerceOrders.length} orders from WooCommerce`);
+  // const processedOrders = await processOrders(wooCommerceOrders);
 
-  const processedOrders = await processOrders(wooCommerceOrders);
+  // httpLogger.info(`Successfully processed ${processedOrders.length} orders`);
 
-  httpLogger.info(`Successfully processed ${processedOrders.length} orders`);
-
-  return processedOrders;
+  // return processedOrders;
 };
 
-const fetchOrdersFromWooCommerce = async (
+export const fetchOrdersFromWooCommerce = async (
   afterDate: string
 ): Promise<any[]> => {
   try {
@@ -196,16 +181,10 @@ export const stopCronJobs = () => {
 
 export const triggerOrderSync = async () => {
   httpLogger.info("Manually triggering order sync...");
-  const processedOrders = await startSyncProcess();
 
-  if (!processedOrders) {
-    throw new ServerError(
-      "WooCommerce Server Error",
-      StatusCodes.INTERNAL_SERVER_ERROR.toString()
-    );
-  }
+  await startSyncProcess();
 
-  httpLogger.info(`Successfully processed ${processedOrders.length} orders`);
+  httpLogger.info(`Successfully triggered order sync`);
 };
 
 // Manual trigger for cleanup

@@ -9,6 +9,8 @@ import corsHandler from "./middlewares/cors.middleware";
 import httpLogger from "./services/logger.service";
 import { connectDB, getConnectionStatus } from "./config/db.config";
 import cronService from "./services/cron.service";
+import queueService from "./services/queue.service";
+import workerService from "./services/worker.service";
 
 const app = createApp();
 
@@ -36,6 +38,7 @@ const startServer = async () => {
     app.listen(PORT, () => {
       httpLogger.info(`Server started successfully in http://localhost:${PORT}`);
       httpLogger.info('Database connection: ✅ Connected');
+      httpLogger.info('Queue system: ✅ Initialized');
     });
 
   } catch (error: any) {
@@ -43,5 +46,26 @@ const startServer = async () => {
     process.exit(1);
   }
 };
+
+// Graceful shutdown
+const gracefulShutdown = async () => {
+  httpLogger.info('Received shutdown signal. Gracefully shutting down...');
+  
+  try {
+    // Close queue services
+    await queueService.closeQueues();
+    await workerService.closeWorkers();
+    
+    httpLogger.info('Queue services closed successfully');
+    process.exit(0);
+  } catch (error) {
+    httpLogger.error('Error during shutdown:', error);
+    process.exit(1);
+  }
+};
+
+// Handle shutdown signals
+process.on('SIGTERM', gracefulShutdown);
+process.on('SIGINT', gracefulShutdown);
 
 startServer();

@@ -1,530 +1,237 @@
-# WooCommerce Store API
+# WooCommerce Store Server
 
-A Node.js/Express.js backend API that synchronizes products and orders from a WooCommerce store into a local MongoDB database. This application provides RESTful endpoints for managing orders and products with advanced search, filtering, and sorting capabilities.
+A Node.js/Express server for managing WooCommerce store data with Redis and BullMQ queue system.
 
-## 🎯 Project Overview
+## Features
 
-This is a MERN stack application backend designed as an interview assessment task. It demonstrates:
+- **Product Management**: CRUD operations for products
+- **Order Management**: Order processing and synchronization
+- **Queue System**: Redis-based job queue with BullMQ
+- **Real-time Processing**: Background job processing for orders
+- **API Endpoints**: RESTful API for all operations
 
-- **WooCommerce API Integration**: Fetches orders and products from a remote WooCommerce store
-- **Automated Synchronization**: Daily cron jobs to sync new orders and cleanup old data
-- **RESTful API**: Provides endpoints for frontend consumption with search, filter, and sort capabilities
-- **Data Management**: Intelligent cleanup of old orders and orphaned products
-- **Error Handling**: Comprehensive logging and error management
-- **TypeScript**: Full TypeScript implementation for type safety
+## Queue System
 
-## 🚀 Features
+### Overview
 
-### Core Functionality
-- ✅ **Order Synchronization**: Fetches orders from the last 30 days
-- ✅ **Product Management**: Automatically syncs products from order line items
-- ✅ **Automated Cleanup**: Removes orders older than 3 months and orphaned products
-- ✅ **Search & Filter**: Advanced search and filtering capabilities
-- ✅ **Cron Jobs**: Daily sync at 12 PM UTC and weekly cleanup on Sundays
-- ✅ **Error Handling**: Comprehensive logging and error management
-- ✅ **TypeScript**: Full type safety implementation
+The application uses Redis and BullMQ for background job processing. The queue system handles:
+
+- Order synchronization from WooCommerce
+- Order processing and validation
+- Email notifications
+- Order status updates
+- Cleanup operations
+
+### Queue Configuration
+
+#### Redis Configuration
+```typescript
+// server/src/config/redis.config.ts
+const redisConfig: ConnectionOptions = {
+  host: process.env.REDIS_HOST || 'localhost',
+  port: parseInt(process.env.REDIS_PORT || '6379'),
+  password: process.env.REDIS_PASSWORD,
+  // ... other options
+};
+```
+
+#### Environment Variables
+```env
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_PASSWORD=your_password
+REDIS_DB=0
+```
+
+### Queue Structure
+
+#### Available Queues
+- **Orders Queue**: `orders` - Handles all order-related background jobs
+
+#### Job Types
+- `sync_orders`: Synchronize orders from WooCommerce
+- `process_order`: Process new orders
+- `send_order_email`: Send email notifications
+- `update_order_status`: Update order status
+- `cleanup_old_orders`: Clean up old order data
+
+#### Job Priorities
+- `HIGH`: 1 - Critical jobs (status updates, sync)
+- `MEDIUM`: 2 - Standard jobs (order processing)
+- `LOW`: 3 - Non-critical jobs (emails, cleanup)
 
 ### API Endpoints
-- **Orders Management**: CRUD operations with search, filter, and sort
-- **Products Catalog**: Product listing with search and sort capabilities
-- **Sync Operations**: Manual trigger endpoints for sync and cleanup
-- **Health Monitoring**: Cleanup statistics and preview endpoints
 
-## 🛠️ Tech Stack
+#### Queue Management
+```
+GET    /api/queues/health              - Queue system health check
+GET    /api/queues/stats               - All queue statistics
+GET    /api/queues/stats/:queueName    - Specific queue statistics
+POST   /api/queues/pause/:queueName    - Pause a queue
+POST   /api/queues/resume/:queueName   - Resume a queue
+```
 
-- **Runtime**: Node.js
-- **Framework**: Express.js
-- **Database**: MongoDB with Mongoose ODM
-- **Language**: TypeScript
-- **HTTP Client**: Axios
-- **Cron Jobs**: node-cron
-- **Logging**: Winston
-- **Testing**: Jest + Supertest
-- **Development**: Nodemon
+#### Worker Management
+```
+POST   /api/queues/workers/pause/:queueName    - Pause a worker
+POST   /api/queues/workers/resume/:queueName   - Resume a worker
+```
 
-## 📋 Prerequisites
+#### Job Management
+```
+POST   /api/queues/jobs/orders         - Add order job
+```
 
-Before running this application, ensure you have:
+### Usage Examples
 
-- **Node.js** (version 18 or above)
-- **MongoDB** (local installation or MongoDB Atlas)
-- **pnpm** (package manager)
-- **WooCommerce Store** with REST API enabled
+#### Adding Jobs Programmatically
+```typescript
+import queueService from './services/queue.service';
 
-## 🚀 Setup and Installation
+// Add order sync job
+await queueService.addOrderSyncJob({
+  source: 'woocommerce',
+  ordersCount: 50,
+  timestamp: new Date().toISOString(),
+});
 
-### 1. Clone the Repository
+// Add order processing job
+await queueService.addProcessOrderJob({
+  orderId: 'order_123',
+  orderKey: 'wc_order_123',
+  status: 'processing',
+  total: 99.99,
+});
+
+// Add email notification job
+await queueService.addOrderEmailJob({
+  orderId: 'order_123',
+  customerEmail: 'customer@example.com',
+  customerName: 'John Doe',
+  orderTotal: 99.99,
+  status: 'processing',
+});
+```
+
+#### Adding Jobs via API
 ```bash
-git clone https://github.com/dipeshkumarsah98/woocommerce-store.git
-cd server
-```
-
-### 2. Install Dependencies
-```bash
-pnpm install
-```
-
-### 3. Environment Configuration
-Create a `.env` file in the server root directory:
-
-```env
-# Server Configuration
-PORT=3000
-NODE_ENV=development
-
-# Database Configuration
-MONGODB_URI=mongodb://localhost:27017/woocommerce-store
-
-# WooCommerce API Configuration
-BASE_URL=https://interview-test.matat.io/
-C_USERNAME=ck_40d0806b16feb3bd67a4d8dbbff163c6dfcf061d
-C_PASSWORD=cs_9544e30809595750f8f1c6f3f9a6efcc38bfd06d
-```
-
-### 4. Database Setup
-Ensure MongoDB is running on your system:
-```bash
-# For local MongoDB
-mongod
-
-# Or use MongoDB Atlas connection string in MONGODB_URI
-```
-
-### 5. Start the Application
-
-#### Development Mode
-```bash
-pnpm start:dev
-```
-
-#### Production Mode
-```bash
-pnpm build
-pnpm start
-```
-
-### 6. Verify Installation
-The server should start on `http://localhost:3000` with the following log messages:
-```
-Server started successfully in http://localhost:3000
-Database connection: ✅ Connected
-Starting cron jobs...
-Daily order sync job scheduled for 12:00 PM UTC
-Weekly cleanup job scheduled for 2:00 AM UTC every Sunday
-```
-
-## 📚 API Documentation
-
-### Base URL
-```
-http://localhost:3000/api
-```
-
-### Authentication
-The API uses HTTP Basic Authentication for WooCommerce API calls (configured via environment variables).
-
----
-
-### 📦 Orders Endpoints
-
-#### `GET /api/orders`
-Retrieve orders with optional filtering and sorting.
-
-**Query Parameters:**
-- `search` (string, optional): Search in order number, customer info, or product names
-- `status` (string, optional): Filter by order status (`completed`, `processing`, `pending`, `cancelled`, `refunded`)
-- `sortBy` (string, optional): Sort field (`total`, `date_created`, `number`)
-- `sortOrder` (string, optional): Sort direction (`asc`, `desc`)
-
-**Example:**
-```bash
-GET /api/orders?search=john&status=completed&sortBy=total&sortOrder=desc
-```
-
-**Response:**
-```json
-[
-  {
-    "_id": "64f7c8a9b123456789abcdef",
-    "id": "123",
-    "number": "123",
-    "order_key": "wc_order_abc123",
-    "status": "completed",
-    "date_created": "2024-01-15T10:30:00.000Z",
-    "total": 299.99,
-    "customer_id": "456",
-    "customer_note": "Please deliver after 6 PM",
-    "billing": {
-      "first_name": "John",
-      "last_name": "Doe",
-      "email": "john.doe@example.com",
-      "phone": "+1234567890"
+# Add order sync job
+curl -X POST http://localhost:3000/api/queues/jobs/orders \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jobType": "sync_orders",
+    "data": {
+      "source": "woocommerce",
+      "ordersCount": 50
     },
-    "shipping": {
-      "first_name": "John",
-      "last_name": "Doe",
-      "address_1": "123 Main St"
-    },
-    "line_items": [
-      {
-        "_id": "64f7c8a9b123456789abcdef",
-        "name": "Product Name"
-      }
-    ]
-  }
-]
+    "options": {
+      "priority": 1,
+      "delay": 0
+    }
+  }'
+
+# Check queue statistics
+curl http://localhost:3000/api/queues/stats
+
+# Health check
+curl http://localhost:3000/api/queues/health
 ```
 
-#### `GET /api/orders/:orderKey`
-Retrieve a specific order by order key.
+### Worker Implementation
 
-**Parameters:**
-- `orderKey` (string): The unique order key
+Workers are automatically initialized and handle job processing:
 
-**Example:**
-```bash
-GET /api/orders/wc_order_abc123
-```
-
-#### `GET /api/orders/:orderKey/products`
-Retrieve products associated with a specific order.
-
-**Parameters:**
-- `orderKey` (string): The unique order key
-
----
-
-### 🛍️ Products Endpoints
-
-#### `GET /api/products`
-Retrieve products with optional filtering and sorting.
-
-**Query Parameters:**
-- `search` (string, optional): Search in product name or SKU
-- `sortBy` (string, optional): Sort field (`name`, `price`)
-- `sortOrder` (string, optional): Sort direction (`asc`, `desc`)
-
-**Example:**
-```bash
-GET /api/products?search=laptop&sortBy=price&sortOrder=asc
-```
-
-**Response:**
-```json
-[
-  {
-    "_id": "64f7c8a9b123456789abcdef",
-    "id": "789",
-    "name": "Gaming Laptop",
-    "slug": "gaming-laptop",
-    "price": 1299.99,
-    "regular_price": 1499.99,
-    "sale_price": "1299.99",
-    "sku": "LAPTOP-001",
-    "stock_status": "instock",
-    "stock_quantity": 10,
-    "images": [
-      {
-        "src": "https://example.com/image.jpg",
-        "alt": "Gaming Laptop"
-      }
-    ],
-    "categories": [
-      {
-        "id": 15,
-        "name": "Electronics",
-        "slug": "electronics"
-      }
-    ]
-  }
-]
-```
-
-#### `GET /api/products/:slug`
-Retrieve a specific product by slug.
-
-**Parameters:**
-- `slug` (string): The product slug
-
----
-
-### 🔄 Sync Endpoints
-
-#### `POST /api/sync/orders`
-Manually trigger order synchronization.
-
-**Response:**
-```json
-{
-  "success": true,
-  "message": "Order sync completed successfully"
+```typescript
+// Job processing example
+private async handleProcessOrder(data: JobData): Promise<any> {
+  logger.info('Processing order:', data);
+  
+  // Your order processing logic here
+  // - Validate order data
+  // - Update inventory
+  // - Calculate totals
+  // - etc.
+  
+  return { success: true, message: 'Order processed successfully' };
 }
 ```
 
-#### `POST /api/sync/cleanup`
-Manually trigger cleanup of old orders and orphaned products.
+### Monitoring
 
-**Response:**
+#### Queue Statistics
+- **waiting**: Jobs waiting to be processed
+- **active**: Jobs currently being processed
+- **completed**: Successfully completed jobs
+- **failed**: Failed jobs
+- **delayed**: Jobs scheduled for later
+
+#### Health Check Response
 ```json
 {
-  "success": true,
-  "message": "Cleanup completed successfully",
-  "data": {
-    "deletedOrders": 5,
-    "deletedProducts": 2
-  }
-}
-```
-
-#### `GET /api/sync/cleanup/preview`
-Preview what would be deleted in cleanup (dry run).
-
-**Response:**
-```json
-{
-  "success": true,
-  "message": "Cleanup preview generated successfully",
-  "data": {
-    "ordersToDelete": [
-      {
-        "id": "123",
-        "number": "123",
-        "date_created": "2024-01-15T10:30:00.000Z",
-        "line_items_count": 3
-      }
-    ],
-    "productsToCheck": ["64f7c8a9b123456789abcdef"],
-    "summary": {
-      "ordersCount": 1,
-      "productsToCheckCount": 1
+  "status": "healthy",
+  "timestamp": "2024-01-01T12:00:00.000Z",
+  "queues": {
+    "orders": {
+      "exists": true,
+      "isPaused": false
+    }
+  },
+  "workers": {
+    "orders": {
+      "exists": true,
+      "isRunning": true
     }
   }
 }
 ```
 
-#### `GET /api/sync/cleanup/stats`
-Get cleanup statistics.
+### Error Handling
 
-**Response:**
-```json
-{
-  "success": true,
-  "message": "Cleanup statistics retrieved successfully",
-  "data": {
-    "totalOrders": 150,
-    "oldOrders": 5,
-    "totalProducts": 45,
-    "cutoffDate": "2024-01-15T10:30:00.000Z"
-  }
-}
-```
+- **Automatic Retry**: Failed jobs are retried with exponential backoff
+- **Dead Letter Queue**: Failed jobs are moved to failed queue after max attempts
+- **Logging**: All queue operations are logged with Winston
+- **Graceful Shutdown**: Queues and workers are properly closed on app shutdown
 
----
+### Best Practices
 
-### 🚨 Error Responses
+1. **Job Idempotency**: Ensure jobs can be safely retried
+2. **Data Validation**: Validate job data before processing
+3. **Error Handling**: Implement proper error handling in job processors
+4. **Monitoring**: Monitor queue statistics and failed jobs
+5. **Cleanup**: Regularly clean up completed and failed jobs
 
-All endpoints return consistent error responses:
+## Installation
 
-```json
-{
-  "success": false,
-  "message": "Error description",
-  "error": "Detailed error message"
-}
-```
-
-**Common HTTP Status Codes:**
-- `200` - Success
-- `400` - Bad Request
-- `404` - Not Found
-- `500` - Internal Server Error
-
-## 🔧 Environment Variables
-
-### Required Variables
-
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `PORT` | Server port number | `3000` |
-| `MONGODB_URI` | MongoDB connection string | `mongodb://localhost:27017/woocommerce-store` |
-| `BASE_URL` | WooCommerce store URL | `https://interview-test.matat.io/` |
-| `C_USERNAME` | WooCommerce consumer key | `ck_40d0806b16feb3bd67a4d8dbbff163c6dfcf061d` |
-| `C_PASSWORD` | WooCommerce consumer secret | `cs_9544e30809595750f8f1c6f3f9a6efcc38bfd06d` |
-
-### Optional Variables
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `NODE_ENV` | Environment mode | `development` |
-
-### Environment Setup Examples
-
-#### Development
-```env
-PORT=3000
-NODE_ENV=development
-MONGODB_URI=mongodb://localhost:27017/woocommerce-store
-BASE_URL=https://interview-test.matat.io/
-C_USERNAME=ck_40d0806b16feb3bd67a4d8dbbff163c6dfcf061d
-C_PASSWORD=cs_9544e30809595750f8f1c6f3f9a6efcc38bfd06d
-```
-
-#### Production
-```env
-PORT=8080
-NODE_ENV=production
-MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/woocommerce-store
-BASE_URL=https://interview-test.matat.io/
-C_USERNAME=ck_40d0806b16feb3bd67a4d8dbbff163c6dfcf061d
-C_PASSWORD=cs_9544e30809595750f8f1c6f3f9a6efcc38bfd06d
-```
-
-## 🔄 Automated Processes
-
-### Daily Order Sync
-- **Schedule**: Every day at 12:00 PM UTC
-- **Function**: Fetches orders from the last 30 days
-- **Process**: 
-  1. Fetches orders from WooCommerce API
-  2. Processes line items and syncs products
-  3. Stores orders in MongoDB
-  4. Logs process results
-
-### Weekly Cleanup
-- **Schedule**: Every Sunday at 2:00 AM UTC
-- **Function**: Removes old orders and orphaned products
-- **Process**:
-  1. Identifies orders older than 3 months
-  2. Deletes old orders
-  3. Finds products no longer referenced by any orders
-  4. Deletes orphaned products
-  5. Logs cleanup results
-
-### Manual Triggers
-Both processes can be triggered manually via API endpoints:
-- `POST /api/sync/orders` - Manual order sync
-- `POST /api/sync/cleanup` - Manual cleanup
-
-## 🧪 Testing
-
-### Run Tests
+1. Install dependencies:
 ```bash
-# Run all tests
-pnpm test
-
-# Run end-to-end tests
-pnpm test:e2e
-
-# Run tests in watch mode
-pnpm test --watch
+npm install
 ```
 
-### Test Structure
-```
-src/
-├── __tests__/
-│   └── handlers/
-│       └── users.test.ts
-└── e2e/
-    └── index.test.ts
-```
+2. Set up Redis:
+```bash
+# Using Docker
+docker run -d -p 6379:6379 redis:alpine
 
-## 📊 Monitoring and Logging
-
-### Logging
-The application uses Winston for comprehensive logging:
-- **Console Output**: Colored, timestamped logs
-- **Log Levels**: Info, Warning, Error
-- **Structured Data**: JSON format for error details
-
-### Log Examples
-```
-Jan-15-2024 10:30:00 info: Server started successfully in http://localhost:3000
-Jan-15-2024 10:30:01 info: Database connection: ✅ Connected
-Jan-15-2024 12:00:00 info: Starting daily order sync job...
-Jan-15-2024 12:00:05 info: Successfully processed 15 orders
+# Or install locally
+# Follow Redis installation guide for your OS
 ```
 
-### Health Monitoring
-- Database connection status
-- Cron job execution logs
-- API request/response logging
-- Error tracking with stack traces
+3. Configure environment variables:
+```bash
+cp .env.example .env
+# Edit .env with your configuration
+```
 
-## 🚨 Known Issues and Limitations
+4. Start the server:
+```bash
+npm run start:dev
+```
 
-### Current Limitations
+## Dependencies
 
-1. **API Rate Limiting**
-   - **Issue**: WooCommerce API has rate limits
-   - **Impact**: Large sync operations may fail
-   - **Workaround**: Implement retry logic and batch processing
-
-2. **Single Product Fetch Failure**
-   - **Issue**: If one product fetch fails, entire order processing stops
-   - **Impact**: Some orders may not be synced
-   - **Status**: TODO - needs better error handling
-
-3. **Memory Usage**
-   - **Issue**: Large order syncs can consume significant memory
-   - **Impact**: Potential performance issues with large datasets
-   - **Recommendation**: Implement streaming for large datasets
-
-4. **Time Zone Handling**
-   - **Issue**: All cron jobs run in UTC
-   - **Impact**: May not align with store's local time zone
-   - **Workaround**: Configure timezone in cron expressions
-
-5. **Database Indexes**
-   - **Issue**: Limited indexing for complex queries
-   - **Impact**: Performance may degrade with large datasets
-   - **Recommendation**: Add compound indexes for frequently queried fields
-
-### Error Scenarios
-
-1. **WooCommerce API Unavailable**
-   - **Handling**: Graceful error logging, retry mechanism needed
-   - **Impact**: Sync jobs will fail but won't crash the server
-
-2. **MongoDB Connection Loss**
-   - **Handling**: Automatic reconnection attempts
-   - **Impact**: Temporary service unavailability
-
-3. **Invalid Product Data**
-   - **Handling**: Validation and error logging
-   - **Impact**: Specific products may not sync
-
-### Performance Considerations
-
-1. **Large Dataset Handling**
-   - Consider pagination for large order lists
-   - Implement database indexing for better query performance
-   - Use aggregation pipelines for complex queries
-
-2. **Concurrent Requests**
-   - Current implementation handles concurrent requests
-   - Consider implementing request queuing for heavy operations
-
-3. **Memory Management**
-   - Monitor memory usage during large sync operations
-   - Consider implementing streaming for large datasets
-
-## 🔮 Future Enhancements
-
-### Planned Features
-- [ ] Implement retry logic for failed API calls
-- [ ] Add request queuing for heavy operations
-- [ ] Implement streaming for large datasets
-- [ ] Add more comprehensive error handling
-- [ ] Implement database connection pooling
-- [ ] Add API rate limiting
-- [ ] Implement caching layer
-- [ ] Add monitoring dashboard
-- [ ] Implement backup and restore functionality
-
-### Performance Optimizations
-- [ ] Database query optimization
-- [ ] Implement connection pooling
-- [ ] Add response caching
-- [ ] Optimize memory usage
-- [ ] Add compression for API responses
+- **bullmq**: Redis-based queue system
+- **redis**: Redis client for Node.js
+- **express**: Web framework
+- **mongoose**: MongoDB ODM
+- **winston**: Logging library
+- **node-cron**: Cron job scheduler

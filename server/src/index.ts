@@ -62,3 +62,6 @@ process.on('SIGTERM', gracefulShutdown);
 process.on('SIGINT', gracefulShutdown);
 
 startServer();
+
+// for vercel deployment
+export default app;

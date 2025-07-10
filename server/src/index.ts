@@ -2,10 +2,8 @@ require('dotenv').config()
 import "express-async-errors";
 
 import { createApp } from "./createApp";
-import bodyParser from "body-parser";
 import notFoundHandler from "./middlewares/notFoundHandler.middleware";
 import errorHandler from "./middlewares/errorHandler.middleware";
-import corsHandler from "./middlewares/cors.middleware";
 import httpLogger from "./services/logger.service";
 import { connectDB, getConnectionStatus } from "./config/db.config";
 import cronService from "./services/cron.service";
@@ -14,15 +12,9 @@ import workerService from "./services/worker.service";
 
 const app = createApp();
 
-app.use(corsHandler);
-
-app.use(bodyParser.urlencoded({ extended: false }));
-app.use(bodyParser.json());
-
 const PORT = process.env.PORT || 3000;
 
 app.use(notFoundHandler);
-
 app.use(errorHandler);
 
 const startServer = async () => {
@@ -39,6 +31,7 @@ const startServer = async () => {
       httpLogger.info(`Server started successfully in http://localhost:${PORT}`);
       httpLogger.info('Database connection: ✅ Connected');
       httpLogger.info('Queue system: ✅ Initialized');
+      httpLogger.info(`CORS enabled for origins: ${process.env.NODE_ENV === 'production' ? 'Production origins' : 'Development origins'}`);
     });
 
   } catch (error: any) {

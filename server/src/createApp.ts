@@ -7,9 +7,14 @@ import queueRouter from "./routes/queue.route";
 // Initialize queue services
 import "./services/queue.service";
 import "./services/worker.service";
+import corsHandler from "./middlewares/cors.middleware";
 
 export function createApp() {
   const app = express();
+
+  app.use(corsHandler);
+  app.use(express.urlencoded({ extended: false }));
+  app.use(express.json());
 
   app.use("/api/products", productsRouter);
   app.use("/api/orders", ordersRouter);

@@ -138,7 +138,7 @@ const syncOrdersWithDateFilter = async (afterDate: string) => {
       params: {
         after: afterDate,
         per_page: 100,
-        orderby: "date",
+        orderBy: "date_created",
         order: "desc",
       },
     });
@@ -146,7 +146,7 @@ const syncOrdersWithDateFilter = async (afterDate: string) => {
     return data;
   } catch (error: any) {
     httpLogger.error(`Error syncing orders with date filter`, {
-      error: error.message,
+      error: error?.response?.data?.message || error.message,
       afterDate,
     });
 

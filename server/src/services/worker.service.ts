@@ -155,11 +155,12 @@ class WorkerService {
       return;
     }
 
+    logger.info(`Found ${wooCommerceOrders.length} orders from WooCommerce`);
+
     for (const order of wooCommerceOrders) {
       await queueService.addProcessOrderJob(order);
     }
 
-    logger.info(`Found ${wooCommerceOrders.length} orders from WooCommerce`);
     return {
       success: true,
       message: "Orders processing job added to the queue",
